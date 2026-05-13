@@ -6,9 +6,10 @@ services:
       - CUPSADMIN=${CUPSADMIN}
       - CUPSPASSWORD=${CUPSPASSWORD}
     ports:
-      - "631:631"
-    devices:
-      - /dev/bus/usb:/dev/bus/usb
+      - "6631:631"
+    # macOS 不支持 USB 透传,已注释。Linux 宿主机请取消注释
+    # devices:
+    #   - /dev/bus/usb:/dev/bus/usb
     volumes:
       - ./.etc:/etc/cups
     restart: unless-stopped
