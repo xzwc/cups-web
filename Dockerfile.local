@@ -1,0 +1,29 @@
+# 本地快速重建:只编 Go 二进制 + 前端,覆盖到官方镜像之上,
+# 避开 apt 安装 LibreOffice/Java/字体那一大堆系统依赖。
+# 仅用于本地开发,生产请走主 Dockerfile。
+
+# ---- Frontend build ----
+FROM node:20-slim AS frontend-build
+WORKDIR /src/frontend
+COPY frontend/package*.json ./
+RUN npm config set registry https://registry.npmmirror.com/ && \
+    npm ci --no-audit --no-fund --prefer-offline
+COPY frontend ./
+RUN npm run build
+
+# ---- Go build ----
+FROM golang:1.26 AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go env -w GOPROXY=https://goproxy.cn,direct
+RUN go mod download
+COPY . .
+COPY --from=frontend-build /src/frontend/dist ./frontend/dist
+RUN CGO_ENABLED=0 GOOS=linux \
+    go build -ldflags="-s -w" -o /out/cups-web ./cmd/server
+
+# ---- Final: 直接基于官方镜像,只覆盖二进制 ----
+FROM hanxi/cups-web:master
+USER root
+COPY --from=builder /out/cups-web /cups-web
+USER nonroot

@@ -48,6 +48,24 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV MAVEN_VERSION=3.9.9
 ENV MAVEN_HOME=/opt/maven
 ENV PATH=/opt/maven/bin:$PATH
+# 国内构建加速:重写 Debian 源为清华镜像(deb822 格式)
+# 用 http 避免 slim 镜像缺 ca-certificates 导致的 SSL 握手失败,
+# 仓库的 GPG 签名足以保证软件包完整性。
+RUN printf '%s\n' \
+    'Types: deb' \
+    'URIs: http://mirrors.aliyun.com/debian' \
+    'Suites: trixie trixie-updates' \
+    'Components: main' \
+    'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
+    '' \
+    'Types: deb' \
+    'URIs: http://mirrors.aliyun.com/debian-security' \
+    'Suites: trixie-security' \
+    'Components: main' \
+    'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
+    > /etc/apt/sources.list.d/debian.sources && \
+    rm -f /etc/apt/sources.list && \
+    echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
 # Maven tarball 来源策略：
 # 1) 优先 dlcdn.apache.org（Apache CDN，快）—— 但它只保留 current release，
 #    一旦官方发布 3.9.10+，3.9.9 会立即 404，CI 会挂（exit code 22）。
@@ -109,6 +127,25 @@ RUN CGO_ENABLED=0 GOOS=linux \
       -o /out/cups-web ./cmd/server
 
 FROM debian:trixie-slim AS runtime
+
+# 国内构建加速:重写 Debian 源为清华镜像(deb822 格式)
+# 用 http 避免 slim 镜像缺 ca-certificates 导致的 SSL 握手失败,
+# 仓库的 GPG 签名足以保证软件包完整性。
+RUN printf '%s\n' \
+    'Types: deb' \
+    'URIs: http://mirrors.aliyun.com/debian' \
+    'Suites: trixie trixie-updates' \
+    'Components: main' \
+    'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
+    '' \
+    'Types: deb' \
+    'URIs: http://mirrors.aliyun.com/debian-security' \
+    'Suites: trixie-security' \
+    'Components: main' \
+    'Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg' \
+    > /etc/apt/sources.list.d/debian.sources && \
+    rm -f /etc/apt/sources.list && \
+    echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
 
 # Install LibreOffice (headless conversion), Ghostscript, and minimal fonts/certificates
 #

@@ -59,11 +59,24 @@ func SendPrintJob(printerURI string, r io.Reader, mime string, username string, 
 		req.Job.Add(goipp.MakeAttribute("sides", goipp.TagKeyword, goipp.String("one-sided")))
 	}
 
-	// Color mode
+	// Color mode — 同时发多套厂商命名,驱动只识别自己认得的,其他忽略
+	//   print-color-mode   IPP Everywhere / driverless 标准
+	//   ColorModel         Gutenprint / HP / 大部分 Foomatic 通用 PPD
+	//   Ink                Epson ESC/P-R 系列
+	//   CNColorMode        Canon UFR II
+	//   BRMonoColor        Brother
 	if opts.IsColor {
 		req.Job.Add(goipp.MakeAttribute("print-color-mode", goipp.TagKeyword, goipp.String("color")))
+		req.Job.Add(goipp.MakeAttribute("ColorModel", goipp.TagName, goipp.String("RGB")))
+		req.Job.Add(goipp.MakeAttribute("Ink", goipp.TagName, goipp.String("COLOR")))
+		req.Job.Add(goipp.MakeAttribute("CNColorMode", goipp.TagName, goipp.String("color")))
+		req.Job.Add(goipp.MakeAttribute("BRMonoColor", goipp.TagName, goipp.String("FullColor")))
 	} else {
 		req.Job.Add(goipp.MakeAttribute("print-color-mode", goipp.TagKeyword, goipp.String("monochrome")))
+		req.Job.Add(goipp.MakeAttribute("ColorModel", goipp.TagName, goipp.String("Gray")))
+		req.Job.Add(goipp.MakeAttribute("Ink", goipp.TagName, goipp.String("MONO")))
+		req.Job.Add(goipp.MakeAttribute("CNColorMode", goipp.TagName, goipp.String("mono")))
+		req.Job.Add(goipp.MakeAttribute("BRMonoColor", goipp.TagName, goipp.String("Mono")))
 	}
 
 	// Copies

@@ -15,7 +15,10 @@ services:
     restart: unless-stopped
 
   web:
-    image: hanxi/cups-web:master
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    image: cups-web:local
     user: root
     environment:
       - CUPS_HOST=cups:631
